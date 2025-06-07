@@ -1,84 +1,107 @@
             ORG 0000H
-            RS BIT 0x96     ; P2.6
-            EN BIT 0x97     ; P2.7
-            RW BIT 0x94     ; P2.4
-   SETB P3.2
-   SETB IT0
-   SETB EX0
-   SETB EA
+            LJMP START
 
-IPMSG:      DB "Select 5 DIGITS", 0
+            ORG 0003H
+            LJMP INT0_ISR
+
+IPMSG:      DB "Select 3 DIGITS", 0
 TEXT_S:     DB "DOOR OPENED", 0
 TEXT_F:     DB "WRONG PASSWORD", 0
-PASSW:      DB "12345", 0     ; •øΩT±KΩX
-USERIN:     DS 5              ; •Œ®”¿x¶søÈ§J¶r§∏°]30H~34H°^
+PASSW:      DB "123", 0     ; Ê≠£Á¢∫ÂØÜÁ¢º
+USERIN:     DS 3              ; Áî®‰æÜÂÑ≤Â≠òËº∏ÂÖ•Â≠óÂÖÉÔºà30H~34HÔºâ
+	        RS BIT 0x96     ; P2.6
+            EN BIT 0x97     ; P2.7
+            RW BIT 0x94     ; P2.4
 
 START:      
-            SJMP MAIN_LOOP
+            SETB P3.2
+            SETB IT0
+            SETB EX0
+            SETB EA
+			MOV R4, #0
 
 MAIN_LOOP:
             ACALL LCD_INIT
             MOV DPTR, #IPMSG
-            ACALL LCD_PRINT_LINE1   ; ≈„•‹¥£•‹§Â¶r
-            MOV R0, #30H        ; øÈ§J¶∏º∆≠pº∆æπ
-            MOV R2, #'0'        ; ¥`¿Ù¶r§∏±q '0' ∂}©l
-   SJMP INPUT_LOOP
+            ACALL LCD_PRINT_LINE1   ; È°ØÁ§∫ÊèêÁ§∫ÊñáÂ≠ó
+            MOV R0, #30H        ; Ëº∏ÂÖ•Ê¨°Êï∏Ë®àÊï∏Âô®
+            MOV R2, #'0'        ; Âæ™Áí∞Â≠óÂÖÉÂæû '0' ÈñãÂßã
+			MOV R5, #0
+			CLR 25H
 
 INPUT_LOOP:
-    ACALL SET_CURSOR_LINE2
-    MOV A, R2
-    ACALL LDAT
-    ACALL DELAY_2S
-    ACALL NEXT_CHAR_ROUTINE
-    MOV A, 25H
-    JZ INPUT_LOOP
+			ACALL SET_CURSOR_LINE2
+			MOV A, R2
+			ACALL LDAT
+			ACALL DELAY_2S
+			CJNE R5, #0, HANDLE_ISR
+			ACALL NEXT_CHAR_ROUTINE
+			SJMP INPUT_LOOP
+; -------------------------------
+; ‰∏≠Êñ∑Âü∑Ë°å ÂÑ≤Â≠òÁï∂ÂâçÂ≠óÂÖÉÂà∞ USERIN[i]
+; -------------------------------
+HANDLE_ISR:
+			MOV A, R4
+            ADD A, #30H
+            MOV R0, A
+            MOV A, R2
+            MOV @R0, A
+            INC R4
 
-    CLR 25H
-	SETB IT0
-    ACALL CHECK_PASSWORD
-	
-    SJMP MAIN_LOOP
+            CJNE R4, #3, MAIN_LOOP
+
+            ; == ÂâõÂÑ≤Â≠òÂÆåÂÖ®ÈÉ®ÔºåÈñãÂßãÊØîÂ∞ç ==
+            ACALL CHECK_PASSWORD
+            ACALL CLEAR_USERIN
+            MOV R4, #0
+			SJMP MAIN_LOOP
 
 ; -------------------------------
-; ±KΩX§ÒπÔ
+; ÂØÜÁ¢ºÊØîÂ∞ç
 ; -------------------------------
 CHECK_PASSWORD:
-    MOV R3, #0              ; Ø¡§ﬁ i = 0
-    MOV DPTR, #PASSW        ; ´¸¶V±KΩX±`º∆
+			MOV R3, #0
+			MOV DPTR, #PASSW
 
 CHK_LOOP:
-    MOV A, R3
-    ADD A, #30H
-    MOV R0, A
-    MOV A, @R0              ; ®˙•X®œ•Œ™ÃøÈ§J USERIN[i]
-    MOV 40H, A              ; ¶s®Ï RAM 40H º»¶s
+			MOV A, R3
+			ADD A, #30H
+			MOV R0, A
+			MOV A, @R0
+			MOV 40H, A
 
-    ; ®˙•XπÔ¿≥±KΩX PASSW[i]
-    MOV A, R3
-    MOVC A, @A+DPTR         ; ®˙ ROM §§±KΩX
-    CJNE A, 40H, WRONG      ; ©M®œ•Œ™ÃøÈ§J§Ò∏˚
+			MOV A, R3
+			MOVC A, @A+DPTR
+			CJNE A, 40H, WRONG
 
-    INC R3
-    CJNE R3, #5, CHK_LOOP
-
-    SJMP CORRECT
+			INC R3
+			CJNE R3, #3, CHK_LOOP   ; ÊØîÂ∞çÂÆå 3 Á¢ºÂ∞±Ë∑≥Âá∫
+			SJMP CORRECT
 
 CORRECT:
-            ACALL LCD_CLR
-            MOV DPTR, #TEXT_S
-            ACALL LCD_PRINT_LINE1
-   ACALL DELAY_2S
-            SJMP MAIN_LOOP
+			ACALL LCD_CLR
+			MOV DPTR, #TEXT_S
+			ACALL LCD_PRINT_LINE1
+			ACALL DELAY_2S
+			RET
 
 WRONG:
-            ACALL LCD_CLR
-            MOV DPTR, #TEXT_F
-            ACALL LCD_PRINT_LINE1
-            ACALL DELAY_2S
-            SJMP MAIN_LOOP
+			ACALL LCD_CLR
+			MOV DPTR, #TEXT_F
+			ACALL LCD_PRINT_LINE1
+			ACALL DELAY_2S
+			RET
+CLEAR_USERIN:
+            MOV R1, #5
+            MOV R0, #30H
+CLR_LOOP:
+            MOV @R0, #0
+            INC R0
+            DJNZ R1, CLR_LOOP
+            RET
 
 ; -------------------------------
-; LCD ™Ï©lªP±±®Ó
+; LCD ÂàùÂßãËàáÊéßÂà∂
 ; -------------------------------
 LCD_INIT:
             MOV A, #38H
@@ -139,23 +162,23 @@ LCMD:
             RET
 
 ; -------------------------------
-; §U§@≠”¶r§∏ '0'~'9','A'~'F' ¥`¿Ù
+; ‰∏ã‰∏ÄÂÄãÂ≠óÂÖÉ '0'~'9','A'~'F' Âæ™Áí∞
 ; -------------------------------
 NEXT_CHAR_ROUTINE:
             INC R2
-            CJNE R2, #'9'+1, AF_CHECK  ; ∏ı®Ï AF_CHECK ¿À¨d¨Oß_∂WπL 'F'
+            CJNE R2, #'9'+1, AF_CHECK  ; Ë∑≥Âà∞ AF_CHECK Ê™¢Êü•ÊòØÂê¶Ë∂ÖÈÅé 'F'
             MOV R2, #'A'
             SJMP DONE_NEXT
 
 AF_CHECK:
-            CJNE R2, #'F'+1, DONE_NEXT ; ¿À¨d¨Oß_∂WπL 'F'
-            MOV R2, #'0'              ; ≠Y∂WπL°A¶^®Ï '0'
+            CJNE R2, #'F'+1, DONE_NEXT ; Ê™¢Êü•ÊòØÂê¶Ë∂ÖÈÅé 'F'
+            MOV R2, #'0'              ; Ëã•Ë∂ÖÈÅéÔºåÂõûÂà∞ '0'
 
 DONE_NEXT:
             RET
 
 ; -------------------------------
-; ©µø∞∆µ{¶°
+; Âª∂ÈÅ≤ÂâØÁ®ãÂºè
 ; -------------------------------
 DELAY_2S:
             ACALL DELAY
@@ -172,6 +195,7 @@ D2:         DJNZ R6, D2
             RET
 
 INT0_ISR:
+			MOV R5, #1
             SETB 25H 
-            AJMP INPUT_LOOP
+            RETI
    END
