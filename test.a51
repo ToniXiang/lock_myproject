@@ -33,14 +33,13 @@ START:
             SETB P3.2
             SETB IT0
             SETB EX0
-            SETB EA
+			SETB P3.3
 			SETB EX1
             SETB IT1
+			SETB EA
 			MOV R4, #0
 
 MAIN_LOOP:
-			SETB EX1
-            SETB IT1
             ACALL LCD_INIT
             ACALL SHOW_REMAINING_DIGITS
             MOV R0, #30H        ; 輸入次數計數器
@@ -56,25 +55,39 @@ INPUT_LOOP:
 			CJNE R5, #0, HANDLE_ISR
 			ACALL NEXT_CHAR_ROUTINE
 			SJMP INPUT_LOOP
-; -------------------------------
-; 中斷執行 儲存當前字元到 USERIN[i]
-; -------------------------------
+; --------------------------------------------
+; 中斷執行 INT0: 儲存當前字元 INT1: 重新輸入密碼
+; --------------------------------------------
 HANDLE_ISR:
-			MOV A, R4
+            CLR EA
+            CJNE R5, #2, HANDLE_NORMAL_INPUT
+            ACALL LCD_INIT
+            MOV DPTR, #RESET_MSG
+            ACALL LCD_PRINT
+            ACALL DELAY_2S
+            ACALL CLEAR_USERIN
+            MOV R4, #0
+            CLR IE1
+            MOV R5, #0
+            SETB EA
+            SJMP MAIN_LOOP
+
+HANDLE_NORMAL_INPUT:
+            MOV A, R4
             ADD A, #30H
             MOV R0, A
             MOV A, R2
             MOV @R0, A
             INC R4
-
+        
             CJNE R4, #3, MAIN_LOOP
-
-            ; == 剛儲存完全部，開始比對 ==
+        
             ACALL CHECK_PASSWORD
             ACALL CLEAR_USERIN
             MOV R4, #0
-			SJMP MAIN_LOOP
-
+            MOV R5, #0
+            SETB EA
+            SJMP MAIN_LOOP 
 SHOW_REMAINING_DIGITS:
             ACALL SET_CURSOR_LINE1
 
@@ -245,12 +258,9 @@ INT0_ISR:
             CLR IE0
             RETI
 INT1_ISR:
-			ACALL LCD_INIT
-			MOV DPTR, #RESET_MSG
-			ACALL LCD_PRINT
-			ACALL DELAY_2S
-            ACALL CLEAR_USERIN
-            MOV R4, #0     
-            CLR IE1        
-            LJMP MAIN_LOOP 
-   END
+			MOV R5, #2
+            SETB 25H
+            CLR IE1
+            RETI
+
+            END
