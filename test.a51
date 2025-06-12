@@ -59,7 +59,6 @@ INPUT_LOOP:
 ; 中斷執行 INT0: 儲存當前字元 INT1: 重新輸入密碼
 ; --------------------------------------------
 HANDLE_ISR:
-            CLR EA
             CJNE R5, #2, HANDLE_NORMAL_INPUT
             ACALL LCD_INIT
             MOV DPTR, #RESET_MSG
@@ -69,7 +68,6 @@ HANDLE_ISR:
             MOV R4, #0
             CLR IE1
             MOV R5, #0
-            SETB EA
             SJMP MAIN_LOOP
 
 HANDLE_NORMAL_INPUT:
@@ -86,7 +84,6 @@ HANDLE_NORMAL_INPUT:
             ACALL CLEAR_USERIN
             MOV R4, #0
             MOV R5, #0
-            SETB EA
             SJMP MAIN_LOOP 
 SHOW_REMAINING_DIGITS:
             ACALL SET_CURSOR_LINE1

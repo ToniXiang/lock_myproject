@@ -1,4 +1,4 @@
-A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 14:51:39 PAGE     1
+A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 15:02:55 PAGE     1
 
 
 MACRO ASSEMBLER A51 V8.2.7.0
@@ -11,9 +11,9 @@ LOC  OBJ            LINE     SOURCE
 0000                   1                 ORG 0000H
 0000 0200AF            2                 LJMP START
 0003                   3                 ORG 0003H
-0003 0201DE            4                 LJMP INT0_ISR
+0003 0201D8            4                 LJMP INT0_ISR
 0013                   5                             ORG 0013H
-0013 0201E5            6                 LJMP INT1_ISR
+0013 0201DF            6                 LJMP INT1_ISR
                        7     
 0016 50415353          8     TEXT1:          DB "PASSWORD BASED",0      ; 開機畫面第一行
 001A 574F5244                
@@ -61,15 +61,15 @@ LOC  OBJ            LINE     SOURCE
   0094                23                 RW BIT 0x94     ; P2.4
                       24     
 00AF                  25     START:    
-00AF 3171             26                             ACALL LCD_INIT
+00AF 316B             26                             ACALL LCD_INIT
 00B1 900016           27                             MOV DPTR,#TEXT1     ; 載入「PASSWORD BASED」
-00B4 318B             28                             ACALL LCD_PRINT
-00B6 31B9             29                             ACALL LINE2
-A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 14:51:39 PAGE     2
+00B4 3185             28                             ACALL LCD_PRINT
+00B6 31B3             29                             ACALL LINE2
+A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 15:02:55 PAGE     2
 
 00B8 900025           30                             MOV DPTR,#TEXT2     ; 載入「SECURITY SYSTEM」
-00BB 318B             31                             ACALL LCD_PRINT  
-00BD 31CC             32                             ACALL Delay_2S;
+00BB 3185             31                             ACALL LCD_PRINT  
+00BD 31C6             32                             ACALL Delay_2S;
 00BF D2B2             33                 SETB P3.2
 00C1 D288             34                 SETB IT0
 00C3 D2A8             35                 SETB EX0
@@ -80,237 +80,234 @@ LOC  OBJ            LINE     SOURCE
 00CD 7C00             40                             MOV R4, #0
                       41     
 00CF                  42     MAIN_LOOP:
-00CF 3171             43                 ACALL LCD_INIT
-00D1 3119             44                 ACALL SHOW_REMAINING_DIGITS
+00CF 316B             43                 ACALL LCD_INIT
+00D1 3113             44                 ACALL SHOW_REMAINING_DIGITS
 00D3 7830             45                 MOV R0, #30H        ; 輸入次數計數器
 00D5 7A30             46                 MOV R2, #'0'        ; 循環字元從 '0' 開始
 00D7 7D00             47                             MOV R5, #0
 00D9 C225             48                             CLR 25H
                       49     
 00DB                  50     INPUT_LOOP:
-00DB 319A             51                             ACALL SET_CURSOR_LINE2
+00DB 3194             51                             ACALL SET_CURSOR_LINE2
 00DD EA               52                             MOV A, R2
-00DE 319F             53                             ACALL LDAT
-00E0 31CC             54                             ACALL DELAY_2S
+00DE 3199             53                             ACALL LDAT
+00E0 31C6             54                             ACALL DELAY_2S
 00E2 BD0004           55                             CJNE R5, #0, HANDLE_ISR
-00E5 31BE             56                             ACALL NEXT_CHAR_ROUTINE
+00E5 31B8             56                             ACALL NEXT_CHAR_ROUTINE
 00E7 80F2             57                             SJMP INPUT_LOOP
                       58     ; --------------------------------------------
                       59     ; 中斷執行 INT0: 儲存當前字元 INT1: 重新輸入密碼
                       60     ; --------------------------------------------
 00E9                  61     HANDLE_ISR:
-00E9 C2AF             62                 CLR EA
-00EB BD0215           63                 CJNE R5, #2, HANDLE_NORMAL_INPUT
-00EE 3171             64                 ACALL LCD_INIT
-00F0 90009A           65                 MOV DPTR, #RESET_MSG
-00F3 318B             66                 ACALL LCD_PRINT
-00F5 31CC             67                 ACALL DELAY_2S
-00F7 3167             68                 ACALL CLEAR_USERIN
-00F9 7C00             69                 MOV R4, #0
-00FB C28B             70                 CLR IE1
-00FD 7D00             71                 MOV R5, #0
-00FF D2AF             72                 SETB EA
-0101 80CC             73                 SJMP MAIN_LOOP
-                      74     
-0103                  75     HANDLE_NORMAL_INPUT:
-0103 EC               76                 MOV A, R4
-0104 2430             77                 ADD A, #30H
-0106 F8               78                 MOV R0, A
-0107 EA               79                 MOV A, R2
-0108 F6               80                 MOV @R0, A
-0109 0C               81                 INC R4
+00E9 BD0213           62                 CJNE R5, #2, HANDLE_NORMAL_INPUT
+00EC 316B             63                 ACALL LCD_INIT
+00EE 90009A           64                 MOV DPTR, #RESET_MSG
+00F1 3185             65                 ACALL LCD_PRINT
+00F3 31C6             66                 ACALL DELAY_2S
+00F5 3161             67                 ACALL CLEAR_USERIN
+00F7 7C00             68                 MOV R4, #0
+00F9 C28B             69                 CLR IE1
+00FB 7D00             70                 MOV R5, #0
+00FD 80D0             71                 SJMP MAIN_LOOP
+                      72     
+00FF                  73     HANDLE_NORMAL_INPUT:
+00FF EC               74                 MOV A, R4
+0100 2430             75                 ADD A, #30H
+0102 F8               76                 MOV R0, A
+0103 EA               77                 MOV A, R2
+0104 F6               78                 MOV @R0, A
+0105 0C               79                 INC R4
+                      80             
+0106 BC03C6           81                 CJNE R4, #3, MAIN_LOOP
                       82             
-010A BC03C2           83                 CJNE R4, #3, MAIN_LOOP
-                      84             
-010D 312E             85                 ACALL CHECK_PASSWORD
-010F 3167             86                 ACALL CLEAR_USERIN
-0111 7C00             87                 MOV R4, #0
-0113 7D00             88                 MOV R5, #0
-0115 D2AF             89                 SETB EA
-0117 80B6             90                 SJMP MAIN_LOOP 
-0119                  91     SHOW_REMAINING_DIGITS:
-0119 3195             92                 ACALL SET_CURSOR_LINE1
-                      93     
-                      94                 ; 顯示 "Select "
-011B 900035           95                 MOV DPTR, #MSG_PREFIX
-A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 14:51:39 PAGE     3
+0109 3128             83                 ACALL CHECK_PASSWORD
+010B 3161             84                 ACALL CLEAR_USERIN
+010D 7C00             85                 MOV R4, #0
+010F 7D00             86                 MOV R5, #0
+0111 80BC             87                 SJMP MAIN_LOOP 
+0113                  88     SHOW_REMAINING_DIGITS:
+0113 318F             89                 ACALL SET_CURSOR_LINE1
+                      90     
+                      91                 ; 顯示 "Select "
+0115 900035           92                 MOV DPTR, #MSG_PREFIX
+0118 3185             93                 ACALL LCD_PRINT
+                      94     
+                      95                 ; 顯示剩餘次數 = 3 - R4
+A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 15:02:55 PAGE     3
 
-011E 318B             96                 ACALL LCD_PRINT
-                      97     
-                      98                 ; 顯示剩餘次數 = 3 - R4
-0120 C3               99                 CLR C
-0121 7403            100                 MOV A, #3
-0123 9C              101                 SUBB A, R4
-0124 2430            102                 ADD A, #30H
-0126 319F            103                 ACALL LDAT
-                     104     
-                     105                 ; 顯示 " DIGITS"
-0128 90003D          106                 MOV DPTR, #MSG_SUFFIX
-012B 318B            107                 ACALL LCD_PRINT
-                     108     
-012D 22              109                 RET
-                     110     ; -------------------------------
-                     111     ; 密碼比對
-                     112     ; -------------------------------
-012E                 113     CHECK_PASSWORD:
-012E 7B00            114                             MOV R3, #0
-0130 9000A8          115                             MOV DPTR, #PASSW
-                     116     
-0133                 117     CHK_LOOP:
-0133 EB              118                             MOV A, R3
-0134 2430            119                             ADD A, #30H
-0136 F8              120                             MOV R0, A
-0137 E6              121                             MOV A, @R0
-0138 F540            122                             MOV 40H, A
-                     123     
-013A EB              124                             MOV A, R3
-013B 93              125                             MOVC A, @A+DPTR
-013C B54017          126                             CJNE A, 40H, WRONG
-                     127     
-013F 0B              128                             INC R3
-0140 BB03F0          129                             CJNE R3, #3, CHK_LOOP   ; 比對完 3 碼就跳出
-0143 8000            130                             SJMP CORRECT
-                     131     
-0145                 132     CORRECT:
-0145 3171            133                             ACALL LCD_INIT
-0147 900060          134                             MOV DPTR, #TEXT_S1
-014A 318B            135                             ACALL LCD_PRINT
-014C 900071          136                             MOV DPTR, #TEXT_S2
-014F 31B9            137                             ACALL LINE2
-0151 318B            138                             ACALL LCD_PRINT
-0153 31CC            139                             ACALL DELAY_2S
-0155 22              140                             RET
-                     141     
-0156                 142     WRONG:
-0156 3171            143                             ACALL LCD_INIT
-0158 90007D          144                             MOV DPTR, #TEXT_F1
-015B 318B            145                             ACALL LCD_PRINT
-015D 90008C          146                             MOV DPTR, #TEXT_F2
-0160 31B9            147                             ACALL LINE2
-0162 318B            148                             ACALL LCD_PRINT
-0164 31CC            149                             ACALL DELAY_2S
-0166 22              150                             RET
-0167                 151     CLEAR_USERIN:
-0167 7905            152                 MOV R1, #5
-0169 7830            153                 MOV R0, #30H
-016B                 154     CLR_LOOP:
-016B 7600            155                 MOV @R0, #0
-016D 08              156                 INC R0
-016E D9FB            157                 DJNZ R1, CLR_LOOP
-0170 22              158                 RET
-                     159     
-                     160     ; -------------------------------
-                     161     ; LCD 初始與控制
-A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 14:51:39 PAGE     4
+011A C3               96                 CLR C
+011B 7403             97                 MOV A, #3
+011D 9C               98                 SUBB A, R4
+011E 2430             99                 ADD A, #30H
+0120 3199            100                 ACALL LDAT
+                     101     
+                     102                 ; 顯示 " DIGITS"
+0122 90003D          103                 MOV DPTR, #MSG_SUFFIX
+0125 3185            104                 ACALL LCD_PRINT
+                     105     
+0127 22              106                 RET
+                     107     ; -------------------------------
+                     108     ; 密碼比對
+                     109     ; -------------------------------
+0128                 110     CHECK_PASSWORD:
+0128 7B00            111                             MOV R3, #0
+012A 9000A8          112                             MOV DPTR, #PASSW
+                     113     
+012D                 114     CHK_LOOP:
+012D EB              115                             MOV A, R3
+012E 2430            116                             ADD A, #30H
+0130 F8              117                             MOV R0, A
+0131 E6              118                             MOV A, @R0
+0132 F540            119                             MOV 40H, A
+                     120     
+0134 EB              121                             MOV A, R3
+0135 93              122                             MOVC A, @A+DPTR
+0136 B54017          123                             CJNE A, 40H, WRONG
+                     124     
+0139 0B              125                             INC R3
+013A BB03F0          126                             CJNE R3, #3, CHK_LOOP   ; 比對完 3 碼就跳出
+013D 8000            127                             SJMP CORRECT
+                     128     
+013F                 129     CORRECT:
+013F 316B            130                             ACALL LCD_INIT
+0141 900060          131                             MOV DPTR, #TEXT_S1
+0144 3185            132                             ACALL LCD_PRINT
+0146 900071          133                             MOV DPTR, #TEXT_S2
+0149 31B3            134                             ACALL LINE2
+014B 3185            135                             ACALL LCD_PRINT
+014D 31C6            136                             ACALL DELAY_2S
+014F 22              137                             RET
+                     138     
+0150                 139     WRONG:
+0150 316B            140                             ACALL LCD_INIT
+0152 90007D          141                             MOV DPTR, #TEXT_F1
+0155 3185            142                             ACALL LCD_PRINT
+0157 90008C          143                             MOV DPTR, #TEXT_F2
+015A 31B3            144                             ACALL LINE2
+015C 3185            145                             ACALL LCD_PRINT
+015E 31C6            146                             ACALL DELAY_2S
+0160 22              147                             RET
+0161                 148     CLEAR_USERIN:
+0161 7905            149                 MOV R1, #5
+0163 7830            150                 MOV R0, #30H
+0165                 151     CLR_LOOP:
+0165 7600            152                 MOV @R0, #0
+0167 08              153                 INC R0
+0168 D9FB            154                 DJNZ R1, CLR_LOOP
+016A 22              155                 RET
+                     156     
+                     157     ; -------------------------------
+                     158     ; LCD 初始與控制
+                     159     ; -------------------------------
+016B                 160     LCD_INIT:
+016B 7438            161                 MOV A, #38H
+A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 15:02:55 PAGE     4
 
-                     162     ; -------------------------------
-0171                 163     LCD_INIT:
-0171 7438            164                 MOV A, #38H
-0173 31AC            165                 ACALL LCMD
-0175 740C            166                 MOV A, #0CH
-0177 31AC            167                 ACALL LCMD
-0179 7406            168                 MOV A, #06H
-017B 31AC            169                 ACALL LCMD
-017D 7401            170                 MOV A, #01H
-017F 31AC            171                 ACALL LCMD
-0181 7402            172                 MOV A, #02H
-0183 31AC            173                 ACALL LCMD
-0185 22              174                 RET
-                     175     
-0186                 176     LCD_CLR:
-0186 7401            177                 MOV A, #01H
-0188 31AC            178                 ACALL LCMD
-018A 22              179                 RET
-018B                 180     LCD_PRINT:
-018B E4              181                 CLR A
-018C 93              182                 MOVC A, @A+DPTR
-018D 6005            183                 JZ DONE_PRINT
-018F 319F            184                 ACALL LDAT
-0191 A3              185                 INC DPTR
-0192 80F7            186                 SJMP LCD_PRINT
-0194                 187     DONE_PRINT:
-0194 22              188                 RET
-                     189     
-0195                 190     SET_CURSOR_LINE1:
-0195 7480            191                 MOV A, #80H
-0197 31AC            192                 ACALL LCMD
-0199 22              193                 RET
-                     194     
-019A                 195     SET_CURSOR_LINE2:
-019A 74C0            196                 MOV A, #0C0H
-019C 31AC            197                 ACALL LCMD
-019E 22              198                 RET
-                     199     
-019F                 200     LDAT:
-019F F580            201                 MOV P0, A
-01A1 D296            202                 SETB RS
-01A3 C294            203                 CLR RW
-01A5 D297            204                 SETB EN
-01A7 31D5            205                 ACALL DELAY
-01A9 C297            206                 CLR EN
-01AB 22              207                 RET
-                     208     
-01AC                 209     LCMD:
-01AC F580            210                 MOV P0, A
-01AE C296            211                 CLR RS
-01B0 C294            212                 CLR RW
-01B2 D297            213                 SETB EN
-01B4 31D5            214                 ACALL DELAY
-01B6 C297            215                 CLR EN
-01B8 22              216                 RET
-01B9                 217     LINE2:
-01B9 74C0            218        MOV A,#0C0H
-01BB 31AC            219        ACALL LCMD
-01BD 22              220        RET
-                     221     
-                     222     ; -------------------------------
-                     223     ; 下一個字元 '0'~'9','A'~'F' 循環
-                     224     ; -------------------------------
-01BE                 225     NEXT_CHAR_ROUTINE:
-01BE 0A              226                 INC R2
-01BF BA3A04          227                 CJNE R2, #'9'+1, AF_CHECK  ; 跳到 AF_CHECK 檢查是否超過 'F'
-A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 14:51:39 PAGE     5
+016D 31A6            162                 ACALL LCMD
+016F 740C            163                 MOV A, #0CH
+0171 31A6            164                 ACALL LCMD
+0173 7406            165                 MOV A, #06H
+0175 31A6            166                 ACALL LCMD
+0177 7401            167                 MOV A, #01H
+0179 31A6            168                 ACALL LCMD
+017B 7402            169                 MOV A, #02H
+017D 31A6            170                 ACALL LCMD
+017F 22              171                 RET
+                     172     
+0180                 173     LCD_CLR:
+0180 7401            174                 MOV A, #01H
+0182 31A6            175                 ACALL LCMD
+0184 22              176                 RET
+0185                 177     LCD_PRINT:
+0185 E4              178                 CLR A
+0186 93              179                 MOVC A, @A+DPTR
+0187 6005            180                 JZ DONE_PRINT
+0189 3199            181                 ACALL LDAT
+018B A3              182                 INC DPTR
+018C 80F7            183                 SJMP LCD_PRINT
+018E                 184     DONE_PRINT:
+018E 22              185                 RET
+                     186     
+018F                 187     SET_CURSOR_LINE1:
+018F 7480            188                 MOV A, #80H
+0191 31A6            189                 ACALL LCMD
+0193 22              190                 RET
+                     191     
+0194                 192     SET_CURSOR_LINE2:
+0194 74C0            193                 MOV A, #0C0H
+0196 31A6            194                 ACALL LCMD
+0198 22              195                 RET
+                     196     
+0199                 197     LDAT:
+0199 F580            198                 MOV P0, A
+019B D296            199                 SETB RS
+019D C294            200                 CLR RW
+019F D297            201                 SETB EN
+01A1 31CF            202                 ACALL DELAY
+01A3 C297            203                 CLR EN
+01A5 22              204                 RET
+                     205     
+01A6                 206     LCMD:
+01A6 F580            207                 MOV P0, A
+01A8 C296            208                 CLR RS
+01AA C294            209                 CLR RW
+01AC D297            210                 SETB EN
+01AE 31CF            211                 ACALL DELAY
+01B0 C297            212                 CLR EN
+01B2 22              213                 RET
+01B3                 214     LINE2:
+01B3 74C0            215        MOV A,#0C0H
+01B5 31A6            216        ACALL LCMD
+01B7 22              217        RET
+                     218     
+                     219     ; -------------------------------
+                     220     ; 下一個字元 '0'~'9','A'~'F' 循環
+                     221     ; -------------------------------
+01B8                 222     NEXT_CHAR_ROUTINE:
+01B8 0A              223                 INC R2
+01B9 BA3A04          224                 CJNE R2, #'9'+1, AF_CHECK  ; 跳到 AF_CHECK 檢查是否超過 'F'
+01BC 7A41            225                 MOV R2, #'A'
+01BE 8005            226                 SJMP DONE_NEXT
+                     227     
+A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 15:02:55 PAGE     5
 
-01C2 7A41            228                 MOV R2, #'A'
-01C4 8005            229                 SJMP DONE_NEXT
-                     230     
-01C6                 231     AF_CHECK:
-01C6 BA4702          232                 CJNE R2, #'F'+1, DONE_NEXT ; 檢查是否超過 'F'
-01C9 7A30            233                 MOV R2, #'0'              ; 若超過，回到 '0'
+01C0                 228     AF_CHECK:
+01C0 BA4702          229                 CJNE R2, #'F'+1, DONE_NEXT ; 檢查是否超過 'F'
+01C3 7A30            230                 MOV R2, #'0'              ; 若超過，回到 '0'
+                     231     
+01C5                 232     DONE_NEXT:
+01C5 22              233                 RET
                      234     
-01CB                 235     DONE_NEXT:
-01CB 22              236                 RET
-                     237     
-                     238     ; -------------------------------
-                     239     ; 延遲副程式
-                     240     ; -------------------------------
-01CC                 241     DELAY_2S:
-01CC 31D5            242                 ACALL DELAY
-01CE 31D5            243                 ACALL DELAY
-01D0 31D5            244                 ACALL DELAY
-01D2 31D5            245                 ACALL DELAY
-01D4 22              246                 RET
-                     247     
-01D5                 248     DELAY:
-01D5 7FFF            249                 MOV R7, #255
-01D7 7EFF            250     D1:         MOV R6, #255
-01D9 DEFE            251     D2:         DJNZ R6, D2
-01DB DFFA            252                 DJNZ R7, D1
-01DD 22              253                 RET
-                     254     
-01DE                 255     INT0_ISR:
-01DE 7D01            256                             MOV R5, #1
-01E0 D225            257                 SETB 25H
-01E2 C289            258                 CLR IE0
-01E4 32              259                 RETI
-01E5                 260     INT1_ISR:
-01E5 7D02            261                             MOV R5, #2
-01E7 D225            262                 SETB 25H
-01E9 C28B            263                 CLR IE1
-01EB 32              264                 RETI
-                     265     
-                     266                 END
-A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 14:51:39 PAGE     6
+                     235     ; -------------------------------
+                     236     ; 延遲副程式
+                     237     ; -------------------------------
+01C6                 238     DELAY_2S:
+01C6 31CF            239                 ACALL DELAY
+01C8 31CF            240                 ACALL DELAY
+01CA 31CF            241                 ACALL DELAY
+01CC 31CF            242                 ACALL DELAY
+01CE 22              243                 RET
+                     244     
+01CF                 245     DELAY:
+01CF 7FFF            246                 MOV R7, #255
+01D1 7EFF            247     D1:         MOV R6, #255
+01D3 DEFE            248     D2:         DJNZ R6, D2
+01D5 DFFA            249                 DJNZ R7, D1
+01D7 22              250                 RET
+                     251     
+01D8                 252     INT0_ISR:
+01D8 7D01            253                             MOV R5, #1
+01DA D225            254                 SETB 25H
+01DC C289            255                 CLR IE0
+01DE 32              256                 RETI
+01DF                 257     INT1_ISR:
+01DF 7D02            258                             MOV R5, #2
+01E1 D225            259                 SETB 25H
+01E3 C28B            260                 CLR IE1
+01E5 32              261                 RETI
+                     262     
+                     263                 END
+A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 15:02:55 PAGE     6
 
 SYMBOL TABLE LISTING
 ------ ----- -------
@@ -318,50 +315,50 @@ SYMBOL TABLE LISTING
 
 N A M E                T Y P E  V A L U E   ATTRIBUTES
 
-AF_CHECK. . . . . . .  C ADDR   01C6H   A   
-CHECK_PASSWORD. . . .  C ADDR   012EH   A   
-CHK_LOOP. . . . . . .  C ADDR   0133H   A   
-CLEAR_USERIN. . . . .  C ADDR   0167H   A   
-CLR_LOOP. . . . . . .  C ADDR   016BH   A   
-CORRECT . . . . . . .  C ADDR   0145H   A   
-D1. . . . . . . . . .  C ADDR   01D7H   A   
-D2. . . . . . . . . .  C ADDR   01D9H   A   
-DELAY . . . . . . . .  C ADDR   01D5H   A   
-DELAY_2S. . . . . . .  C ADDR   01CCH   A   
-DONE_NEXT . . . . . .  C ADDR   01CBH   A   
-DONE_PRINT. . . . . .  C ADDR   0194H   A   
+AF_CHECK. . . . . . .  C ADDR   01C0H   A   
+CHECK_PASSWORD. . . .  C ADDR   0128H   A   
+CHK_LOOP. . . . . . .  C ADDR   012DH   A   
+CLEAR_USERIN. . . . .  C ADDR   0161H   A   
+CLR_LOOP. . . . . . .  C ADDR   0165H   A   
+CORRECT . . . . . . .  C ADDR   013FH   A   
+D1. . . . . . . . . .  C ADDR   01D1H   A   
+D2. . . . . . . . . .  C ADDR   01D3H   A   
+DELAY . . . . . . . .  C ADDR   01CFH   A   
+DELAY_2S. . . . . . .  C ADDR   01C6H   A   
+DONE_NEXT . . . . . .  C ADDR   01C5H   A   
+DONE_PRINT. . . . . .  C ADDR   018EH   A   
 EA. . . . . . . . . .  B ADDR   00A8H.7 A   
 EN. . . . . . . . . .  B ADDR   0090H.7 A   
 EX0 . . . . . . . . .  B ADDR   00A8H.0 A   
 EX1 . . . . . . . . .  B ADDR   00A8H.2 A   
 HANDLE_ISR. . . . . .  C ADDR   00E9H   A   
-HANDLE_NORMAL_INPUT .  C ADDR   0103H   A   
+HANDLE_NORMAL_INPUT .  C ADDR   00FFH   A   
 IE0 . . . . . . . . .  B ADDR   0088H.1 A   
 IE1 . . . . . . . . .  B ADDR   0088H.3 A   
 INPUT_LOOP. . . . . .  C ADDR   00DBH   A   
-INT0_ISR. . . . . . .  C ADDR   01DEH   A   
-INT1_ISR. . . . . . .  C ADDR   01E5H   A   
+INT0_ISR. . . . . . .  C ADDR   01D8H   A   
+INT1_ISR. . . . . . .  C ADDR   01DFH   A   
 IT0 . . . . . . . . .  B ADDR   0088H.0 A   
 IT1 . . . . . . . . .  B ADDR   0088H.2 A   
-LCD_CLR . . . . . . .  C ADDR   0186H   A   
-LCD_INIT. . . . . . .  C ADDR   0171H   A   
-LCD_PRINT . . . . . .  C ADDR   018BH   A   
-LCMD. . . . . . . . .  C ADDR   01ACH   A   
-LDAT. . . . . . . . .  C ADDR   019FH   A   
-LINE2 . . . . . . . .  C ADDR   01B9H   A   
+LCD_CLR . . . . . . .  C ADDR   0180H   A   
+LCD_INIT. . . . . . .  C ADDR   016BH   A   
+LCD_PRINT . . . . . .  C ADDR   0185H   A   
+LCMD. . . . . . . . .  C ADDR   01A6H   A   
+LDAT. . . . . . . . .  C ADDR   0199H   A   
+LINE2 . . . . . . . .  C ADDR   01B3H   A   
 MAIN_LOOP . . . . . .  C ADDR   00CFH   A   
 MSG_PREFIX. . . . . .  C ADDR   0035H   A   
 MSG_SUFFIX. . . . . .  C ADDR   003DH   A   
-NEXT_CHAR_ROUTINE . .  C ADDR   01BEH   A   
+NEXT_CHAR_ROUTINE . .  C ADDR   01B8H   A   
 P0. . . . . . . . . .  D ADDR   0080H   A   
 P3. . . . . . . . . .  D ADDR   00B0H   A   
 PASSW . . . . . . . .  C ADDR   00A8H   A   
 RESET_MSG . . . . . .  C ADDR   009AH   A   
 RS. . . . . . . . . .  B ADDR   0090H.6 A   
 RW. . . . . . . . . .  B ADDR   0090H.4 A   
-SET_CURSOR_LINE1. . .  C ADDR   0195H   A   
-SET_CURSOR_LINE2. . .  C ADDR   019AH   A   
-SHOW_REMAINING_DIGITS  C ADDR   0119H   A   
+SET_CURSOR_LINE1. . .  C ADDR   018FH   A   
+SET_CURSOR_LINE2. . .  C ADDR   0194H   A   
+SHOW_REMAINING_DIGITS  C ADDR   0113H   A   
 START . . . . . . . .  C ADDR   00AFH   A   
 TEXT1 . . . . . . . .  C ADDR   0016H   A   
 TEXT2 . . . . . . . .  C ADDR   0025H   A   
@@ -372,12 +369,12 @@ TEXT_S. . . . . . . .  C ADDR   0045H   A
 TEXT_S1 . . . . . . .  C ADDR   0060H   A   
 TEXT_S2 . . . . . . .  C ADDR   0071H   A   
 USERIN. . . . . . . .  C ADDR   00ACH   A   
-WRONG . . . . . . . .  C ADDR   0156H   A   
+WRONG . . . . . . . .  C ADDR   0150H   A   
 
 
 REGISTER BANK(S) USED: 0 
 
 
 ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)
-A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 14:51:39 PAGE     7
+A51 MACRO ASSEMBLER  TEST                                                                 06/12/2025 15:02:55 PAGE     7
 
