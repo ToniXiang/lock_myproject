@@ -1,29 +1,48 @@
             ORG 0000H
             LJMP START
-
             ORG 0003H
             LJMP INT0_ISR
+			ORG 0013H
+            LJMP INT1_ISR
 
-IPMSG:      DB "Select 3 DIGITS", 0
+TEXT1: 		DB "PASSWORD BASED",0      ; 開機畫面第一行
+TEXT2:		DB "SECURITY SYSTEM",0     ; 開機畫面第二行
+MSG_PREFIX:    DB "Select ", 0
+MSG_SUFFIX:    DB " DIGITS", 0
 TEXT_S:     DB "DOOR OPENED", 0
 TEXT_F:     DB "WRONG PASSWORD", 0
+TEXT_S1:	DB "ACCESS - GRANTED",0    ; 成功訊息第一行
+TEXT_S2:	DB "DOOR OPENED",0         ; 成功訊息第二行
+TEXT_F1:	DB "WRONG PASSWORD",0      ; 失敗訊息第一行
+TEXT_F2:	DB "ACCESS DENIED",0       ; 失敗訊息第二行
+RESET_MSG: DB "INPUT CLEARED", 0
 PASSW:      DB "123", 0     ; 正確密碼
 USERIN:     DS 3              ; 用來儲存輸入字元（30H~34H）
 	        RS BIT 0x96     ; P2.6
             EN BIT 0x97     ; P2.7
             RW BIT 0x94     ; P2.4
 
-START:      
+START:    
+			ACALL LCD_INIT
+			MOV DPTR,#TEXT1     ; 載入「PASSWORD BASED」
+			ACALL LCD_PRINT
+			ACALL LINE2
+			MOV DPTR,#TEXT2     ; 載入「SECURITY SYSTEM」
+			ACALL LCD_PRINT  
+			ACALL Delay_2S;
             SETB P3.2
             SETB IT0
             SETB EX0
             SETB EA
+			SETB EX1
+            SETB IT1
 			MOV R4, #0
 
 MAIN_LOOP:
+			SETB EX1
+            SETB IT1
             ACALL LCD_INIT
-            MOV DPTR, #IPMSG
-            ACALL LCD_PRINT_LINE1   ; 顯示提示文字
+            ACALL SHOW_REMAINING_DIGITS
             MOV R0, #30H        ; 輸入次數計數器
             MOV R2, #'0'        ; 循環字元從 '0' 開始
 			MOV R5, #0
@@ -56,6 +75,25 @@ HANDLE_ISR:
             MOV R4, #0
 			SJMP MAIN_LOOP
 
+SHOW_REMAINING_DIGITS:
+            ACALL SET_CURSOR_LINE1
+
+            ; 顯示 "Select "
+            MOV DPTR, #MSG_PREFIX
+            ACALL LCD_PRINT
+
+            ; 顯示剩餘次數 = 3 - R4
+            CLR C
+            MOV A, #3
+            SUBB A, R4
+            ADD A, #30H
+            ACALL LDAT
+
+            ; 顯示 " DIGITS"
+            MOV DPTR, #MSG_SUFFIX
+            ACALL LCD_PRINT
+
+            RET
 ; -------------------------------
 ; 密碼比對
 ; -------------------------------
@@ -79,16 +117,22 @@ CHK_LOOP:
 			SJMP CORRECT
 
 CORRECT:
-			ACALL LCD_CLR
-			MOV DPTR, #TEXT_S
-			ACALL LCD_PRINT_LINE1
+			ACALL LCD_INIT
+			MOV DPTR, #TEXT_S1
+			ACALL LCD_PRINT
+			MOV DPTR, #TEXT_S2
+			ACALL LINE2
+			ACALL LCD_PRINT
 			ACALL DELAY_2S
 			RET
 
 WRONG:
-			ACALL LCD_CLR
-			MOV DPTR, #TEXT_F
-			ACALL LCD_PRINT_LINE1
+			ACALL LCD_INIT
+			MOV DPTR, #TEXT_F1
+			ACALL LCD_PRINT
+			MOV DPTR, #TEXT_F2
+			ACALL LINE2
+			ACALL LCD_PRINT
 			ACALL DELAY_2S
 			RET
 CLEAR_USERIN:
@@ -120,9 +164,6 @@ LCD_CLR:
             MOV A, #01H
             ACALL LCMD
             RET
-
-LCD_PRINT_LINE1:
-            ACALL SET_CURSOR_LINE1
 LCD_PRINT:
             CLR A
             MOVC A, @A+DPTR
@@ -160,6 +201,10 @@ LCMD:
             ACALL DELAY
             CLR EN
             RET
+LINE2:
+   MOV A,#0C0H
+   ACALL LCMD
+   RET
 
 ; -------------------------------
 ; 下一個字元 '0'~'9','A'~'F' 循環
@@ -196,6 +241,16 @@ D2:         DJNZ R6, D2
 
 INT0_ISR:
 			MOV R5, #1
-            SETB 25H 
+            SETB 25H
+            CLR IE0
             RETI
+INT1_ISR:
+			ACALL LCD_INIT
+			MOV DPTR, #RESET_MSG
+			ACALL LCD_PRINT
+			ACALL DELAY_2S
+            ACALL CLEAR_USERIN
+            MOV R4, #0     
+            CLR IE1        
+            LJMP MAIN_LOOP 
    END
