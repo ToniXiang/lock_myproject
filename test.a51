@@ -16,8 +16,8 @@ TEXT_S2:	DB "DOOR OPENED",0         ; 成功訊息第二行
 TEXT_F1:	DB "WRONG PASSWORD",0      ; 失敗訊息第一行
 TEXT_F2:	DB "ACCESS DENIED",0       ; 失敗訊息第二行
 RESET_MSG: DB "INPUT CLEARED", 0
-PASSW:      DB "123", 0     ; 正確密碼
-USERIN:     DS 3              ; 用來儲存輸入字元（30H~34H）
+PASSW:      DB "12345", 0     ; 正確密碼
+USERIN:     DS 5              ; 用來儲存輸入字元（30H~34H）
 	        RS BIT 0x96     ; P2.6
             EN BIT 0x97     ; P2.7
             RW BIT 0x94     ; P2.4
@@ -26,7 +26,7 @@ START:
 			ACALL LCD_INIT
 			MOV DPTR,#TEXT1     ; 載入「PASSWORD BASED」
 			ACALL LCD_PRINT
-			ACALL LINE2
+			ACALL SET_CURSOR_LINE2
 			MOV DPTR,#TEXT2     ; 載入「SECURITY SYSTEM」
 			ACALL LCD_PRINT  
 			ACALL Delay_2S;
@@ -45,7 +45,6 @@ MAIN_LOOP:
             MOV R0, #30H        ; 輸入次數計數器
             MOV R2, #'0'        ; 循環字元從 '0' 開始
 			MOV R5, #0
-			CLR 25H
 
 INPUT_LOOP:
 			ACALL SET_CURSOR_LINE2
@@ -68,6 +67,7 @@ HANDLE_ISR:
             MOV R4, #0
             CLR IE1
             MOV R5, #0
+            CLR 25H
             SJMP MAIN_LOOP
 
 HANDLE_NORMAL_INPUT:
@@ -77,14 +77,15 @@ HANDLE_NORMAL_INPUT:
             MOV A, R2
             MOV @R0, A
             INC R4
-        
-            CJNE R4, #3, MAIN_LOOP
+            CJNE R4, #5, MAIN_LOOP
         
             ACALL CHECK_PASSWORD
+HANDLE_RET:
             ACALL CLEAR_USERIN
             MOV R4, #0
             MOV R5, #0
-            SJMP MAIN_LOOP 
+            CLR 25H
+            SJMP START
 SHOW_REMAINING_DIGITS:
             ACALL SET_CURSOR_LINE1
 
@@ -92,9 +93,9 @@ SHOW_REMAINING_DIGITS:
             MOV DPTR, #MSG_PREFIX
             ACALL LCD_PRINT
 
-            ; 顯示剩餘次數 = 3 - R4
+            ; 顯示剩餘次數
             CLR C
-            MOV A, #3
+            MOV A, #5
             SUBB A, R4
             ADD A, #30H
             ACALL LDAT
@@ -123,7 +124,7 @@ CHK_LOOP:
 			CJNE A, 40H, WRONG
 
 			INC R3
-			CJNE R3, #3, CHK_LOOP   ; 比對完 3 碼就跳出
+			CJNE R3, #5, CHK_LOOP   ; 比對完 5 碼就跳出
 			SJMP CORRECT
 
 CORRECT:
@@ -131,20 +132,25 @@ CORRECT:
 			MOV DPTR, #TEXT_S1
 			ACALL LCD_PRINT
 			MOV DPTR, #TEXT_S2
-			ACALL LINE2
+			ACALL SET_CURSOR_LINE2
 			ACALL LCD_PRINT
 			ACALL DELAY_2S
-			RET
+			ACALL DELAY_2S
+			ACALL DELAY_2S
+			ACALL DELAY_2S
+			ACALL DELAY_2S
+			SJMP HANDLE_RET
 
 WRONG:
 			ACALL LCD_INIT
 			MOV DPTR, #TEXT_F1
 			ACALL LCD_PRINT
 			MOV DPTR, #TEXT_F2
-			ACALL LINE2
+			ACALL SET_CURSOR_LINE2
 			ACALL LCD_PRINT
 			ACALL DELAY_2S
-			RET
+			ACALL PLAY_ALERT
+			SJMP HANDLE_RET
 CLEAR_USERIN:
             MOV R1, #5
             MOV R0, #30H
@@ -188,7 +194,6 @@ SET_CURSOR_LINE1:
             MOV A, #80H
             ACALL LCMD
             RET
-
 SET_CURSOR_LINE2:
             MOV A, #0C0H
             ACALL LCMD
@@ -211,11 +216,6 @@ LCMD:
             ACALL DELAY
             CLR EN
             RET
-LINE2:
-   MOV A,#0C0H
-   ACALL LCMD
-   RET
-
 ; -------------------------------
 ; 下一個字元 '0'~'9','A'~'F' 循環
 ; -------------------------------
@@ -259,5 +259,34 @@ INT1_ISR:
             SETB 25H
             CLR IE1
             RETI
+; --------------------------------------------
+; 簡單蜂鳴器警報：播放固定頻率三次
+; --------------------------------------------
+NOTE_FREQ   EQU 50H
+FREQ_TEMP   EQU 60H
+MUSIC_DELAY_SHORT:
+            MOV R7, #20
+D1_SHORT:   MOV R5, #20
+D2_SHORT:   DJNZ R5, D2_SHORT
+            DJNZ R7, D1_SHORT
+            RET
+PLAY_ALERT:
+            MOV R7, #3            ; 播放 3 次警報音
+ALERT_LOOP:
+			MOV P0, #11110000B
+			ACALL DELAY
+            MOV R6, #100          ; 頻率（可調）
+FREQ_LOOP_ALERT:
+            MOV FREQ_TEMP, R6
+            CPL P2.6              ; 翻轉蜂鳴器腳位
+			ACALL MUSIC_DELAY_SHORT
+            MOV R6, FREQ_TEMP
+            DJNZ R6, FREQ_LOOP_ALERT
 
-            END
+            ; 播放完一聲，暫停一下
+			MOV P0, #00001111B
+			ACALL DELAY           ; 可調整延遲長短
+            DJNZ R7, ALERT_LOOP
+            RET
+			
+			END
