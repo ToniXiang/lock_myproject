@@ -24,10 +24,10 @@ USERIN:     DS 5              ; 用來儲存輸入字元（30H~34H）
 
 START:    
 			ACALL LCD_INIT
-			MOV DPTR,#TEXT1     ; 載入「PASSWORD BASED」
+			MOV DPTR,#TEXT1
 			ACALL LCD_PRINT
 			ACALL SET_CURSOR_LINE2
-			MOV DPTR,#TEXT2     ; 載入「SECURITY SYSTEM」
+			MOV DPTR,#TEXT2
 			ACALL LCD_PRINT  
 			ACALL Delay_2S;
             SETB P3.2
@@ -105,8 +105,18 @@ SHOW_REMAINING_DIGITS:
             ACALL LCD_PRINT
 
             RET
+INT0_ISR:
+			MOV R5, #1
+            SETB 25H
+            CLR IE0
+            RETI
+INT1_ISR:
+			MOV R5, #2
+            SETB 25H
+            CLR IE1
+            RETI
 ; -------------------------------
-; 密碼比對
+; 密碼處理
 ; -------------------------------
 CHECK_PASSWORD:
 			MOV R3, #0
@@ -248,44 +258,31 @@ D1:         MOV R6, #255
 D2:         DJNZ R6, D2
             DJNZ R7, D1
             RET
-
-INT0_ISR:
-			MOV R5, #1
-            SETB 25H
-            CLR IE0
-            RETI
-INT1_ISR:
-			MOV R5, #2
-            SETB 25H
-            CLR IE1
-            RETI
-; --------------------------------------------
-; 簡單蜂鳴器警報：播放固定頻率三次
-; --------------------------------------------
-NOTE_FREQ   EQU 50H
-FREQ_TEMP   EQU 60H
 MUSIC_DELAY_SHORT:
             MOV R7, #20
 D1_SHORT:   MOV R5, #20
 D2_SHORT:   DJNZ R5, D2_SHORT
             DJNZ R7, D1_SHORT
             RET
+; --------------------------------------------
+; 蜂鳴器警報與 LED 閃爍 等待 RESET
+; --------------------------------------------
+NOTE_FREQ   EQU 50H
+FREQ_TEMP   EQU 60H
 PLAY_ALERT:
-            MOV R7, #3            ; 播放 3 次警報音
+            MOV R7, #3
 ALERT_LOOP:
 			MOV P0, #11110000B
 			ACALL DELAY
             MOV R6, #100          ; 頻率（可調）
 FREQ_LOOP_ALERT:
             MOV FREQ_TEMP, R6
-            CPL P2.6              ; 翻轉蜂鳴器腳位
+            CPL P2.6
 			ACALL MUSIC_DELAY_SHORT
             MOV R6, FREQ_TEMP
             DJNZ R6, FREQ_LOOP_ALERT
-
-            ; 播放完一聲，暫停一下
 			MOV P0, #00001111B
-			ACALL DELAY           ; 可調整延遲長短
+			ACALL DELAY
             DJNZ R7, ALERT_LOOP
             RET
 			
